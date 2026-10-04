@@ -1482,7 +1482,50 @@
         promptText = `Buatkan Modul Ajar Kurikulum Merdeka berpendekatan Deep Learning lengkap untuk:\nMata Pelajaran: ${mapel}\nKelas/Fase: ${kelas}\nTopik: ${topik}\n\nLengkapi komponen:\n1. Identitas Modul & Profil Pelajar Pancasila\n2. Tujuan Pembelajaran & Pertanyaan Pemantik\n3. Skenario Kegiatan Pembelajaran (Pendahuluan, Inti, Penutup)\n4. Rubrik Asesmen Formatif & Sumatif\n5. Pengayaan dan Remedial`;
       } else if (tipe === 'lkpd') {
         promptText = `Buatkan Lembar Kerja Peserta Didik (LKPD) Interaktif Kurikulum Merdeka untuk:\nMata Pelajaran: ${mapel}\nKelas: ${kelas}\nTopik: ${topik}\n\nSertakan:\n1. Judul Aktivitas & Petunjuk Kerja Kelompok\n2. Ringkasan Konsep Utama\n3. Lembar Eksplorasi / Diskusi Siswa\n4. Pertanyaan Refleksi & Kesimpulan`;
-      } else {
+      } else {async function prosesGenerateAI(promptText) {
+  // 1. Ambil API Key dari penyimpanan lokal atau input pengaturan
+  const apiKey = (localStorage.getItem('gemini_api_key') || '').trim();
+  
+  if (!apiKey) {
+    alert("API Key belum tersimpan! Silakan buka menu Pengaturan dan masukkan API Key Anda.");
+    return;
+  }
+
+  // 2. Alamat URL Gemini 1.5 Flash yang valid
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  // 3. Kirim permintaan ke Google Gemini API
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [{ text: promptText }]
+        }
+      ]
+    })
+  });
+
+  const json = await response.json();
+
+  // 4. Jika Google mengembalikan error (misal 400 / 403), tampilkan alasan spesifiknya
+  if (!response.ok) {
+    console.error("Detail Error dari Google:", json);
+    const pesanError = json.error?.message || "Terjadi kesalahan pada Google API.";
+    throw new Error(pesanError);
+  }
+
+  // 5. Kembalikan hasil respon dari Gemini
+  if (json.candidates && json.candidates[0]?.content?.parts[0]?.text) {
+    return json.candidates[0].content.parts[0].text;
+  }
+
+  throw new Error("Respon AI kosong atau format tidak sesuai.");
+}
+
         promptText = `Buatkan Bank Soal & Rubrik Asesmen Kurikulum Merdeka untuk:\nMata Pelajaran: ${mapel}\nKelas: ${kelas}\nMateri: ${topik}\n\nSertakan:\n1. 5 Soal Pilihan Ganda (beserta kunci dan pembahasan)\n2. 3 Soal Uraian HOTS (beserta rubrik penskoran)`;
       }
 
